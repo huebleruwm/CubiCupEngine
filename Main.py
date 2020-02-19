@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import time
-import sys
 import threading
 import CubiCupEngine
 
