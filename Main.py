@@ -25,6 +25,7 @@ def outputHandler():
 
     # Loop forever
     while True:
+        time.sleep(0.1)                 # Sleep for a little bit to not suck processor time
         if engine.printIsReady():       # If the engine is ready to output something
             engine.printValues()        # output whatever the engine wants to
 
