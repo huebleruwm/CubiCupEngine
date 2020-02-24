@@ -18,7 +18,7 @@ def getInitialBoard(size, board):
 
 
 # Add move to board
-def addMoveToBoard(board, x, y, z, turn):
+def addMoveToBoard(board, x, y, z, turn, pieces):
     # cant play if top is full
     if board[0][0][0] != EMPTY:
         return
@@ -33,11 +33,11 @@ def addMoveToBoard(board, x, y, z, turn):
 
     # cant play unless open
     if board[x][y][z] != EMPTY:
-        # print("spot in use")
         return
 
     # move is legal, set board spot to whoever's turn it is
     board[x][y][z] = turn
+    pieces[turn] -= 1
 
 
 # Recursively fill cups, if any exist, until all are done or a player is out of pieces
@@ -79,7 +79,7 @@ def fill(board, x, y, z, lastTurnAdd, pieces):
 
             # If other player still has pieces, see if adding this pieces created a cup they can fill
             if pieces[lastTurnAdd] != 0:
-                fill(board, x, y, z - 1, thisTurnAdd, pieces);
+                fill(board, x, y, z - 1, thisTurnAdd, pieces)
 
 
 # Fill an array with the available moves, given a current board

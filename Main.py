@@ -3,6 +3,8 @@
 import time
 import threading
 import CubiCupEngine
+import sys
+import CubiCupMCTS
 
 # Create engine object
 engine = CubiCupEngine.Engine()
@@ -25,9 +27,9 @@ def outputHandler():
 
     # Loop forever
     while True:
-        time.sleep(0.1)                 # Sleep for a little bit to not suck processor time
-        if engine.printIsReady():       # If the engine is ready to output something
-            engine.printValues()        # output whatever the engine wants to
+        time.sleep(.1)                 # Sleep for a little bit to not suck processor time
+        #if engine.printIsReady():       # If the engine is ready to output something
+        engine.printValues()        # output whatever the engine wants to
 
 
 # Main function to start the python code
@@ -42,10 +44,13 @@ def main():
     outputThread.daemon = True                              # Tell the thread to stop once the program is killed
     outputThread.start()                                    # Start the new thread
 
+    engine.runEngine()
+
     # The main thread only sleeps for now.
     # In the future, the main thread should run the engine by calling engine.run(), or something similar
     while True:
-        time.sleep(10)
+        print("Sleeping")
+        time.sleep(5)
 
 
 # Call "main()"
