@@ -18,7 +18,6 @@ class Engine:
             output("Best Move:" + str(self.mcts.root.getBestChild().state.lastMove))  # print "Random Move:(x,y,z)"
             output("Score:" + str(self.mcts.root.getBestChild().getScore()))
             output("Simulations:" + str(self.mcts.root.sims))
-            output("GameSize:" + str(self.gameSize))  # print "GameSize:n"
             self.printReady = False  # printing is complete, indicate no more printing is needed
 
     # "subscribe:x" is used to tell the interfacing program which values this program will output
@@ -26,7 +25,6 @@ class Engine:
         output("subscribe:Best Move")
         output("subscribe:Score")
         output("subscribe:Simulations")
-        output("subscribe:GameSize")  # we will output "GameSize" values
 
     # Returns true if self.printReady = true
     def printIsReady(self):

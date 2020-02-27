@@ -3,8 +3,6 @@
 import time
 import threading
 import CubiCupEngine
-import sys
-import CubiCupMCTS
 
 # Create engine object
 engine = CubiCupEngine.Engine()
@@ -45,12 +43,6 @@ def main():
     outputThread.start()                                    # Start the new thread
 
     engine.runEngine()
-
-    # The main thread only sleeps for now.
-    # In the future, the main thread should run the engine by calling engine.run(), or something similar
-    while True:
-        print("Sleeping")
-        time.sleep(5)
 
 
 # Call "main()"
