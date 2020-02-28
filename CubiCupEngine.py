@@ -9,7 +9,6 @@ class Engine:
     def __init__(self):
         self.bestMove = ""  # No initial random move
         self.gameSize = 0  # Game size isn't known yet
-        self.printReady = False  # We're not ready to print yet
         self.mcts = None
 
     # Print the values we care about
@@ -26,10 +25,6 @@ class Engine:
         output("subscribe:Score")
         output("subscribe:Simulations")
 
-    # Returns true if self.printReady = true
-    def printIsReady(self):
-        return self.printReady
-
     # Update the engine with some type of command
     # Currently implemented commands:
     #   newGame:x       -- start a new game with size x
@@ -41,14 +36,12 @@ class Engine:
         # If first part of command is "newGame"
         if directives[0] == "newGame":
             self.gameSize = int(directives[1])  # Set self.gameSize to the second part of the command
-            self.printReady = True  # Set printReady to true, so we know we're ready to update our values
             if self.mcts is not None:
                 self.mcts.indicateReset(self.gameSize)
 
         # If first part of command is "move"
         if directives[0] == "move":
             coords = directives[1].split(",")  # Split the second part of the command by "," to get x,y,z
-            self.printReady = True  # Set printReady to true, so we know we're ready to update our values
             self.mcts.updateWithTurn((int(coords[0]), int(coords[1]), int(coords[2])))
 
     def runEngine(self):

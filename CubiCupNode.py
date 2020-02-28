@@ -16,6 +16,8 @@ class Node:
         self.sims = 0
         self.explore = 1.41
         self.isLeaf = True
+        self.terminalWinChild = None
+        self.terminalTieChild = None
 
         if self.state.gameOver:
             self.isTerminal = True
@@ -38,6 +40,20 @@ class Node:
         self.isLeaf = False
 
     def getBestChild(self):
+
+        if self.isTerminal:
+
+            # We are terminal, if we have a win, choose that, if no win but tie available, choose the tie, otherwise
+            # this is a terminal loss and we should just look for best win chance
+
+            if self.terminalWinChild is not None:
+                # If terminal with a win, that's a winning move for sure, can't get better than that
+                return self.terminalWinChild
+
+            if self.terminalTieChild is not None:
+                # No terminal child with win, check for terminal child with tie
+                return self.terminalTieChild
+
         currentMaxWin = -1
         bestChild = None
         # Loop through all children to find the one with the greatest win chance
@@ -77,6 +93,7 @@ class Node:
     def checkForTerminal(self):
 
         canTie = False
+        allChildrenTerminal = True  # Assume all nodes are terminal
 
         # If this node is blue turn and there's a terminal child with score 1, that's a win
         # If this node is blue turn and all children are terminal with score 0, that's a loss
@@ -91,26 +108,29 @@ class Node:
                             # Terminal child has win available for blue, declare this node terminal
                             self.isTerminal = True
                             self.terminalScore = 1
+                            self.terminalWinChild = child
                             return
                         elif child.terminalScore == 0.5:
                             # Terminal child has tie available
                             canTie = True
+                            self.terminalTieChild = child
                     else:
                         # Non-terminal child, this node isn't terminal
-                        return
+                        allChildrenTerminal = False
                 else:
                     # Non-existent child, this node isn't terminal
-                    return
+                    allChildrenTerminal = False
 
             # All child nodes are terminal, but there are no wins for currently player
-            if canTie:
-                # Tie available
-                self.isTerminal = True
-                self.terminalScore = 0.5
-            else:
-                # No tie, so loss for blue
-                self.isTerminal = True
-                self.terminalScore = 0
+            if allChildrenTerminal:
+                if canTie:
+                    # Tie available
+                    self.isTerminal = True
+                    self.terminalScore = 0.5
+                else:
+                    # No tie, so loss for blue
+                    self.isTerminal = True
+                    self.terminalScore = 0
 
         # If this node is green and there's a terminal child with score 0, that's a win
         # If this node is green turn and all children are terminal with score 1, that's a loss
@@ -125,26 +145,29 @@ class Node:
                             # Terminal child has win available for green, declare this node terminal
                             self.isTerminal = True
                             self.terminalScore = 0
+                            self.terminalWinChild = child
                             return
                         elif child.terminalScore == 0.5:
                             # Terminal child has tie available
                             canTie = True
+                            self.terminalTieChild = child
                     else:
                         # Non-terminal child, this node isn't terminal
-                        return
+                        allChildrenTerminal = False
                 else:
                     # Non-existent child, this node isn't terminal
-                    return
+                    allChildrenTerminal = False
 
             # All child nodes are terminal, but there are no wins for currently player
-            if canTie:
-                # Tie available
-                self.isTerminal = True
-                self.terminalScore = 0.5
-            else:
-                # No tie, so loss for green
-                self.isTerminal = True
-                self.terminalScore = 1
+            if allChildrenTerminal:
+                if canTie:
+                    # Tie available
+                    self.isTerminal = True
+                    self.terminalScore = 0.5
+                else:
+                    # No tie, so loss for green
+                    self.isTerminal = True
+                    self.terminalScore = 1
 
 
 

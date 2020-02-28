@@ -7,7 +7,6 @@ import CubiCupEngine
 # Create engine object
 engine = CubiCupEngine.Engine()
 
-
 # Function to handle input to python program
 def inputHandler():
 
@@ -25,8 +24,7 @@ def outputHandler():
 
     # Loop forever
     while True:
-        time.sleep(.1)                 # Sleep for a little bit to not suck processor time
-        #if engine.printIsReady():       # If the engine is ready to output something
+        time.sleep(.2)                 # Sleep for a little bit to not suck processor time
         engine.printValues()        # output whatever the engine wants to
 
 
