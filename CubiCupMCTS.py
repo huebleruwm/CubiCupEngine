@@ -29,6 +29,14 @@ class MCTS:
         self.newRootReady = False
         self.reset = False
 
+    def updateWithTurn(self, move):
+
+        # Find node with move in children list, then set the new root to that child
+        for i in range(len(self.root.children)):
+            if self.root.children[i].state.lastMove == move:
+                self.newRoot = self.root.children[i]
+                self.newRootReady = True
+
     def selectNodeToExpand(self, node):
 
         # If node is a game over, return it
@@ -106,45 +114,6 @@ class MCTS:
         self.root.sims += 1
         self.root.score += valueForThisNode
 
-    def updateWithTurn(self, move):
-
-        # Find node with move in children list, then set the new root to that child
-        for i in range(len(self.root.children)):
-            if self.root.children[i].state.lastMove == move:
-                self.newRoot = self.root.children[i]
-                self.newRootReady = True
-
-    # Debugging routine, used to print the tree, called recursively
-    def printNodeChildren(self, node, header):
-
-        header = header + "--"
-
-        for child in node.children:
-
-            if child is not None:
-                print(header + str(child.state.lastMove) + " " +\
-                      " Blue:" + str(child.state.pieces[BLUE]) + \
-                      " Green:" + str(child.state.pieces[GREEN]) )
-
-                if child.isTerminal:
-                    if child.terminalScore == 1:
-                        if child.state.turn == BLUE:
-                            print(header + "Turn: Blue -- Win")
-                        else:
-                            print(header + "Turn: Green -- Loss")
-                    elif child.terminalScore == 0.5:
-                        if child.state.turn == BLUE:
-                            print(header + "Turn: Blue -- Tie")
-                        else:
-                            print(header + "Turn: Green -- Tie")
-                    elif child.terminalScore == 0:
-                        if child.state.turn == BLUE:
-                            print(header + "Turn: Blue -- Loss")
-                        else:
-                            print(header + "Turn: Green -- Win")
-
-                self.printNodeChildren(child, header)
-
     def run(self):
 
         while True:
@@ -171,31 +140,45 @@ class MCTS:
                 # Back propagate the result of that simulation through the tree
                 self.backPropagate(endValue, nodeToExpand)
 
-                # Just debugging code, leaving in for now but setting to False so it doesn't run
-                if False:
-                    for i in range(len(self.root.children)):
-
-                        if self.root.children[i] is None:
-                            continue
-
-                        node = self.root.children[i]
-
-                #print("SIM: " + str(self.root.sims))
-                #self.printNodeChildren(self.root, "")
-                #print("")
             else:
+                # No more searching being done, just sleep to be courteous to cpu
                 time.sleep(0.1)
-                if False:
-                    if self.root.terminalScore == 1:
-                        print("Blue wins")
-                    elif self.root.terminalScore == 0.5:
-                        print("Tie")
-                    elif self.root.terminalScore == 0:
-                        print("Green wins")
 
-                #print("SIM: " + str(self.root.sims))
-                #self.printNodeChildren(self.root, "")
-                #print("")
+            #print("SIM: " + str(self.root.sims))
+            #self.printNodeChildren(self.root, "")
+            #print("")
+
+        # Debugging routine, used to print the tree, called recursively
+    def printNodeChildren(self, node, header):
+
+        header = header + "--"
+
+        for child in node.children:
+
+            if child is not None:
+                print(header + str(child.state.lastMove) + " " + \
+                      " Blue:" + str(child.state.pieces[BLUE]) + \
+                      " Green:" + str(child.state.pieces[GREEN]))
+
+                if child.isTerminal:
+                    if child.terminalScore == 1:
+                        if child.state.turn == BLUE:
+                            print(header + "Turn: Blue -- Win")
+                        else:
+                            print(header + "Turn: Green -- Loss")
+                    elif child.terminalScore == 0.5:
+                        if child.state.turn == BLUE:
+                            print(header + "Turn: Blue -- Tie")
+                        else:
+                            print(header + "Turn: Green -- Tie")
+                    elif child.terminalScore == 0:
+                        if child.state.turn == BLUE:
+                            print(header + "Turn: Blue -- Loss")
+                        else:
+                            print(header + "Turn: Green -- Win")
+
+                self.printNodeChildren(child, header)
+
 
 
 

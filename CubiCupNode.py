@@ -26,6 +26,7 @@ class Node:
             self.isTerminal = False
             self.terminalScore = 0
 
+    # Create a child from the ith available move
     def createChildAt(self, i):
         # Copy current state
         newChildState = CubiCupState.State(self.state.boardSize, self.state)
@@ -39,57 +40,10 @@ class Node:
         # This node has a child, it is no longer a leaf
         self.isLeaf = False
 
-    def getBestChild(self):
-
-        if self.isTerminal:
-
-            # We are terminal, if we have a win, choose that, if no win but tie available, choose the tie, otherwise
-            # this is a terminal loss and we should just look for best win chance
-
-            if self.terminalWinChild is not None:
-                # If terminal with a win, that's a winning move for sure, can't get better than that
-                return self.terminalWinChild
-
-            if self.terminalTieChild is not None:
-                # No terminal child with win, check for terminal child with tie
-                return self.terminalTieChild
-
-        currentMaxWin = -1
-        bestChild = None
-        # Loop through all children to find the one with the greatest win chance
-        for child in self.children:
-            if child is not None and child.getWinChance() > currentMaxWin:
-                currentMaxWin = child.getWinChance()
-                bestChild = child
-
-        return bestChild
-
-    def getUCT(self):
-        # UCT formula as specified by wikipedia
-        return (self.score/self.sims) + self.explore * sqrt(log(self.parent.sims) / self.sims)
-
-    def getWinChance(self):
-        return self.score / self.sims
-
-    def getScore(self):
-
-        if self.isTerminal:
-            if self.terminalScore == 0.5:
-                # Node is terminal and is a tie
-                return 0
-            elif self.terminalScore == 1:
-                # Node is terminal and blue wins
-                return 1
-            elif self.terminalScore == 0:
-                # Node is terminal and green wins
-                return -1
-
-        # Take win chance and normalize it to be between -1 and 1, 1 indicates blue winning
-        if self.state.turn == GREEN:
-            return 2 * self.score / self.sims - 1
-        else:
-            return - (2 * self.score / self.sims - 1)
-
+    # Check to see if this node is terminal, terminal is defined by:
+    #   1) A child can result in a forced win for this node, terminal win
+    #   2) All children are terminal, but all are forced wins for opposite player, terminal loss
+    #   3) All children are terminal, there's no forced wins, but there's at least one way to tie, terminal tie
     def checkForTerminal(self):
 
         canTie = False
@@ -115,10 +69,10 @@ class Node:
                             canTie = True
                             self.terminalTieChild = child
                     else:
-                        # Non-terminal child, this node isn't terminal
+                        # Non-terminal child
                         allChildrenTerminal = False
                 else:
-                    # Non-existent child, this node isn't terminal
+                    # Non-existent children can't be terminal
                     allChildrenTerminal = False
 
             # All child nodes are terminal, but there are no wins for currently player
@@ -152,10 +106,10 @@ class Node:
                             canTie = True
                             self.terminalTieChild = child
                     else:
-                        # Non-terminal child, this node isn't terminal
+                        # Non-terminal child
                         allChildrenTerminal = False
                 else:
-                    # Non-existent child, this node isn't terminal
+                    # Non-existent children can't be terminal
                     allChildrenTerminal = False
 
             # All child nodes are terminal, but there are no wins for currently player
@@ -169,5 +123,52 @@ class Node:
                     self.isTerminal = True
                     self.terminalScore = 1
 
+    # This method finds the best available move for this node, attempts to maximize win chance
+    def getBestChild(self):
 
+        # If this node is terminal, the best option is a forced win child. Otherwise all children
+        # are either forced losses or ties, in this case we want the tie
+        if self.isTerminal:
+            if self.terminalWinChild is not None:
+                # A terminal win child exists, that's a winning move for sure, can't get better than that
+                return self.terminalWinChild
 
+            if self.terminalTieChild is not None:
+                # If we get here, there's no terminal child with win, if terminal child with tie exists, that's the best
+                return self.terminalTieChild
+
+        currentMaxWin = -1
+        bestChild = None
+        # Loop through all children to find the one with the greatest win chance
+        for child in self.children:
+            if child is not None and child.getWinChance() > currentMaxWin:
+                currentMaxWin = child.getWinChance()
+                bestChild = child
+
+        return bestChild
+
+    def getUCT(self):
+        # UCT formula as specified by wikipedia
+        return (self.score/self.sims) + self.explore * sqrt(log(self.parent.sims) / self.sims)
+
+    def getWinChance(self):
+        return self.score / self.sims
+
+    # Take win chance based on simulations and normalize it to be between -1 and 1, 1 indicates blue winning
+    def getScore(self):
+
+        if self.isTerminal:
+            if self.terminalScore == 0.5:
+                # Node is terminal and is a tie
+                return 0
+            elif self.terminalScore == 1:
+                # Node is terminal and blue wins
+                return 1
+            elif self.terminalScore == 0:
+                # Node is terminal and green wins
+                return -1
+
+        if self.state.turn == GREEN:
+            return 2 * self.score / self.sims - 1
+        else:
+            return - (2 * self.score / self.sims - 1)
