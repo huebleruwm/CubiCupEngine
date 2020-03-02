@@ -25,7 +25,7 @@ class Engine:
         output("subscribe:Best Move")
         output("subscribe:Score")
         output("subscribe:Simulations")
-        output("subscribe:Gamesize")
+        output("subscribe:Game Size")
 
     # Update the engine with some type of command
     # Currently implemented commands:
