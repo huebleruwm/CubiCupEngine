@@ -148,7 +148,7 @@ class MCTS:
             #self.printNodeChildren(self.root, "")
             #print("")
 
-        # Debugging routine, used to print the tree, called recursively
+    # Debugging routine, used to print the tree, called recursively
     def printNodeChildren(self, node, header):
 
         header = header + "--"

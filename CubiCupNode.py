@@ -152,7 +152,7 @@ class Node:
         return (self.score/self.sims) + self.explore * sqrt(log(self.parent.sims) / self.sims)
 
     def getWinChance(self):
-        return self.score / self.sims
+        return self.score / max(self.sims, 1)
 
     # Take win chance based on simulations and normalize it to be between -1 and 1, 1 indicates blue winning
     def getScore(self):
@@ -169,6 +169,6 @@ class Node:
                 return -1
 
         if self.state.turn == GREEN:
-            return 2 * self.score / self.sims - 1
+            return 2 * self.getWinChance() - 1
         else:
-            return - (2 * self.score / self.sims - 1)
+            return - (2 * self.getWinChance() - 1)
