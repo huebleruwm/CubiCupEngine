@@ -18,7 +18,8 @@ class Engine:
             output("Score:" + str(self.mcts.root.getBestChild().getScore()))
             output("Simulations:" + str(self.mcts.root.sims))
             output("Game Size:" + str(self.gameSize))
-            self.printReady = False  # printing is complete, indicate no more printing is needed
+        else:
+            output("Error:Something is wrong")
 
     # "subscribe:x" is used to tell the interfacing program which values this program will output
     def printValueDefinitions(self):

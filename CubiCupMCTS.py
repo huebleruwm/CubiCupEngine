@@ -43,23 +43,16 @@ class MCTS:
         if node.isTerminal:
             return node
 
-        # If node is a leaf, just choose first child
-        if node.isLeaf:
-            node.createChildAt(0)
-            return node.children[0]
+        if node.childrenUnexplored > 0:
+            newChildIndex = len(node.children) - node.childrenUnexplored
+            node.createChildAt(newChildIndex)
+            return node.children[newChildIndex]
 
-        maxUCT = 0
+        maxUCT = -float("inf")
         bestNode = node
 
         # Loop through all children for specified node
-        for i in range(len(node.children)):
-
-            child = node.children[i]
-
-            # If a child node has not been created, create it and return it
-            if child is None:
-                node.createChildAt(i)
-                return node.children[i]
+        for child in node.children:
 
             # Ignore terminal children, only make a wish cares about them
             if not child.isTerminal:
@@ -87,17 +80,6 @@ class MCTS:
 
     def backPropagate(self, endValue, node):
 
-        # Determine the win value to propagate back up. Child win values indicate the win chance for the
-        # node who owns those children, so the values are reversed
-        if node.state.turn == BLUE and endValue == 1:
-            valueForThisNode = 0
-        elif node.state.turn == GREEN and endValue == 0:
-            valueForThisNode = 0
-        elif endValue == 0.5:
-            valueForThisNode = 0.5
-        else:
-            valueForThisNode = 1
-
         # Traverse tree by calling parents, incremented simulations and score
         while node is not self.root:
 
@@ -105,14 +87,11 @@ class MCTS:
                 # If this node is terminal, check to see if the parent is as well
                 node.parent.checkForTerminal()
 
-            node.sims += 1
-            node.score += valueForThisNode
+            node.updateWith(1, endValue)
             node = node.parent
-            valueForThisNode = 1 - valueForThisNode
 
         # Update root values to finish
-        self.root.sims += 1
-        self.root.score += valueForThisNode
+        self.root.updateWith(1, endValue)
 
     def run(self):
 
@@ -158,24 +137,25 @@ class MCTS:
             if child is not None:
                 print(header + str(child.state.lastMove) + " " + \
                       " Blue:" + str(child.state.pieces[BLUE]) + \
-                      " Green:" + str(child.state.pieces[GREEN]))
+                      " Green:" + str(child.state.pieces[GREEN]) + \
+                      " UCT: " + str(child.getUCT()))
 
                 if child.isTerminal:
                     if child.terminalScore == 1:
-                        if child.state.turn == BLUE:
+                        if child.actionFor == BLUE:
                             print(header + "Turn: Blue -- Win")
                         else:
-                            print(header + "Turn: Green -- Loss")
+                            print(header + "Turn: Green -- Win")
                     elif child.terminalScore == 0.5:
-                        if child.state.turn == BLUE:
+                        if child.actionFor == BLUE:
                             print(header + "Turn: Blue -- Tie")
                         else:
                             print(header + "Turn: Green -- Tie")
                     elif child.terminalScore == 0:
-                        if child.state.turn == BLUE:
+                        if child.actionFor == BLUE:
                             print(header + "Turn: Blue -- Loss")
                         else:
-                            print(header + "Turn: Green -- Win")
+                            print(header + "Turn: Green -- Loss")
 
                 self.printNodeChildren(child, header)
 

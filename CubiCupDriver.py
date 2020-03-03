@@ -20,20 +20,20 @@ def getInitialBoard(size, board):
 # Add move to board
 def addMoveToBoard(board, x, y, z, turn, pieces):
     # cant play if top is full
-    if board[0][0][0] != EMPTY:
-        return
+    #if board[0][0][0] != EMPTY:
+    #    return
 
     # cant play out of bounds
-    if x < 0 or y < 0 or z < 0:
-        return
+    #if x < 0 or y < 0 or z < 0:
+    #    return
 
     # cant play if no cup to put piece in
-    if board[x + 1][y][z] == EMPTY or board[x][y + 1][z] == EMPTY or board[x][y][z + 1] == EMPTY:
-        return
+    #if board[x + 1][y][z] == EMPTY or board[x][y + 1][z] == EMPTY or board[x][y][z + 1] == EMPTY:
+    #    return
 
     # cant play unless open
-    if board[x][y][z] != EMPTY:
-        return
+    #if board[x][y][z] != EMPTY:
+    #    return
 
     # move is legal, set board spot to whoever's turn it is
     board[x][y][z] = turn
@@ -42,6 +42,9 @@ def addMoveToBoard(board, x, y, z, turn, pieces):
 
 # Recursively fill cups, if any exist, until all are done or a player is out of pieces
 def fill(board, x, y, z, lastTurnAdd, pieces):
+
+    filled = False
+
     # Set fill value to opposite of last turn (BLUE = 0, GREEN = 1)
     thisTurnAdd = 1 - lastTurnAdd
 
@@ -52,6 +55,7 @@ def fill(board, x, y, z, lastTurnAdd, pieces):
             # Add the piece to fill the cup and decrement players pieces
             board[x - 1][y][z] = thisTurnAdd
             pieces[thisTurnAdd] -= 1
+            filled = True
 
             # If other player still has pieces, see if adding this pieces created a cup they can fill
             if pieces[lastTurnAdd] != 0:
@@ -64,6 +68,7 @@ def fill(board, x, y, z, lastTurnAdd, pieces):
             # Add the piece to fill the cup and decrement players pieces
             board[x][y - 1][z] = thisTurnAdd
             pieces[thisTurnAdd] -= 1
+            filled = True
 
             # If other player still has pieces, see if adding this pieces created a cup they can fill
             if pieces[lastTurnAdd] != 0:
@@ -76,10 +81,13 @@ def fill(board, x, y, z, lastTurnAdd, pieces):
             # Add the piece to fill the cup and decrement players pieces
             board[x][y][z - 1] = thisTurnAdd
             pieces[thisTurnAdd] -= 1
+            filled = True
 
             # If other player still has pieces, see if adding this pieces created a cup they can fill
             if pieces[lastTurnAdd] != 0:
                 fill(board, x, y, z - 1, thisTurnAdd, pieces)
+
+    return filled
 
 
 # Fill an array with the available moves, given a current board
@@ -100,3 +108,28 @@ def getAvailableMoves(board, size, moveList):
                 z += 1
             x += 1
         depth += 1
+
+
+def updateAvailableMoves(board, moveList, lastMove):
+
+    moveList.remove(lastMove)
+
+    x = lastMove[0]
+    y = lastMove[1]
+    z = lastMove[2]
+
+    # If the piece added to x,y,z makes a valid cup in the -x direction
+    if x > 0 and board[x - 1][y + 1][z] != EMPTY and board[x - 1][y][z + 1] != EMPTY:
+        # We created a cup, and therefore a move
+        moveList.append((x-1, y, z))
+
+    # If the piece added to x,y,z makes a valid cup in the -y direction
+    if y > 0 and board[x + 1][y - 1][z] != EMPTY and board[x][y - 1][z + 1] != EMPTY:
+        # We created a cup, and therefore a move
+        moveList.append((x, y-1, z))
+
+    # If the piece added to x,y,z makes a valid cup in the -z direction
+    if z > 0 and board[x + 1][y][z - 1] != EMPTY and board[x][y + 1][z - 1] != EMPTY:
+        # We created a cup, and therefore a move
+        moveList.append((x, y, z-1))
+

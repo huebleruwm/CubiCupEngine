@@ -6,6 +6,7 @@ from CubiCupDriver import EMPTY
 from CubiCupDriver import addMoveToBoard
 from CubiCupDriver import fill
 from CubiCupDriver import getAvailableMoves
+from CubiCupDriver import updateAvailableMoves
 import copy
 
 
@@ -58,6 +59,12 @@ class State:
 
         self.checkForEnd()
 
+    def lastTurn(self):
+        if self.turn == BLUE:
+            return GREEN
+        else:
+            return BLUE
+
     # Take a turn, adding a cube to position x,y,z
     def takeTurn(self, move):
 
@@ -74,7 +81,7 @@ class State:
         addMoveToBoard(self.board, x, y, z, self.turn, self.pieces)
 
         # Fill cups that may have been created
-        fill(self.board, x, y, z, self.turn, self.pieces)
+        filled = fill(self.board, x, y, z, self.turn, self.pieces)
 
         # Change turn, since someone just moved
         if self.turn == BLUE:
@@ -84,11 +91,15 @@ class State:
 
         self.checkForEnd()
 
-        # Clear the available moves array, and fill it with the new available moves
-        self.availableMoves = []
-        getAvailableMoves(self.board, self.boardSize, self.availableMoves)
-
         self.lastMove = move
+
+        if filled:
+            # Algorithm to determine available moves when cups are filled isn't much more efficient re-determining
+            # all available, unless game is large, maybe we should consider this for large games
+            self.availableMoves = []
+            getAvailableMoves(self.board, self.boardSize, self.availableMoves)
+        else:
+            updateAvailableMoves(self.board, self.availableMoves, self.lastMove)
 
     def checkForEnd(self):
 
@@ -97,22 +108,21 @@ class State:
                     and self.board[0][0][0] != self.board[1][0][0]:
 
                 # this is a tie
-                self.endValue = 0.5
+                self.endValue = (0.5, 0.5)
             else:
                 if self.board[0][0][0] == BLUE:
                     # blue wins
-                    self.endValue = 1
+                    self.endValue = (1, 0)
                 else:
                     # green wins
-                    self.endValue = 0
+                    self.endValue = (0, 1)
             self.gameOver = True
-        else:
+        elif self.pieces[BLUE] == 0 and self.turn == BLUE:
+            # green wins, add score based on left over pieces
+            self.endValue = (-self.pieces[GREEN], 1 + self.pieces[GREEN])
+            self.gameOver = True
+        elif self.pieces[GREEN] == 0 and self.turn == GREEN:
+            # blue wins, add score based on left over pieces
+            self.endValue = (1 + self.pieces[BLUE], -self.pieces[BLUE])
+            self.gameOver = True
 
-            if self.pieces[BLUE] == 0 and self.turn == BLUE:
-                # green wins
-                self.endValue = 0
-                self.gameOver = True
-            elif self.pieces[GREEN] == 0 and self.turn == GREEN:
-                # blue wins
-                self.endValue = 1
-                self.gameOver = True

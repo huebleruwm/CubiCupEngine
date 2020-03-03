@@ -14,17 +14,19 @@ class Node:
         self.state = state
         self.score = 0
         self.sims = 0
-        self.explore = 1.41
-        self.isLeaf = True
-        self.terminalWinChild = None
-        self.terminalTieChild = None
+        self.explore = 1
+        self.terminalChild = None
+        self.childrenUnexplored = len(self.children)
+        self.actionFor = state.lastTurn()
 
         if self.state.gameOver:
             self.isTerminal = True
-            self.terminalScore = state.endValue
+            self.terminalValue = state.endValue
+            self.terminalScore = state.endValue[self.actionFor]
         else:
             self.isTerminal = False
-            self.terminalScore = 0
+            self.terminalValue = None
+            self.terminalScore = -float("inf")
 
     # Create a child from the ith available move
     def createChildAt(self, i):
@@ -38,90 +40,37 @@ class Node:
         self.children[i] = CubiCupNode.Node(self, newChildState)
 
         # This node has a child, it is no longer a leaf
-        self.isLeaf = False
+        self.childrenUnexplored -= 1
 
     # Check to see if this node is terminal, terminal is defined by:
     #   1) A child can result in a forced win for this node, terminal win
-    #   2) All children are terminal, but all are forced wins for opposite player, terminal loss
-    #   3) All children are terminal, there's no forced wins, but there's at least one way to tie, terminal tie
+    #   2) All children are terminal
+    # This attempts to find the best win available, but this doesn't guarantee we find the
+    # best win, we could get the greatest terminal score that is a win, but if a better move
+    # has not been determined to be terminal yet, we can't find it.
     def checkForTerminal(self):
 
-        canTie = False
         allChildrenTerminal = True  # Assume all nodes are terminal
 
-        # If this node is blue turn and there's a terminal child with score 1, that's a win
-        # If this node is blue turn and all children are terminal with score 0, that's a loss
-        if self.state.turn == BLUE:
-            # Loop through all children
-            for child in self.children:
-                if child is not None:
-                    # Child exists
-                    if child.isTerminal:
-                        # Child is terminal
-                        if child.terminalScore == 1:
-                            # Terminal child has win available for blue, declare this node terminal
-                            self.isTerminal = True
-                            self.terminalScore = 1
-                            self.terminalWinChild = child
-                            return
-                        elif child.terminalScore == 0.5:
-                            # Terminal child has tie available
-                            canTie = True
-                            self.terminalTieChild = child
-                    else:
-                        # Non-terminal child
-                        allChildrenTerminal = False
-                else:
-                    # Non-existent children can't be terminal
-                    allChildrenTerminal = False
+        # Loop through all children
+        for child in self.children:
+            if child is not None and child.isTerminal:
+                # If child has better terminal value, save it
+                if child.terminalValue[self.actionFor] >= self.terminalScore:
+                    self.terminalChild = child
+                    self.terminalValue = child.terminalValue
+                    self.terminalScore = child.terminalValue[self.actionFor]
+            else:
+                # Non-existent child or non terminal child
+                allChildrenTerminal = False
 
-            # All child nodes are terminal, but there are no wins for currently player
-            if allChildrenTerminal:
-                if canTie:
-                    # Tie available
-                    self.isTerminal = True
-                    self.terminalScore = 0.5
-                else:
-                    # No tie, so loss for blue
-                    self.isTerminal = True
-                    self.terminalScore = 0
+        # All child nodes are terminal or we found a terminal win
+        if allChildrenTerminal or self.terminalScore >= 1:
+            self.isTerminal = True
 
-        # If this node is green and there's a terminal child with score 0, that's a win
-        # If this node is green turn and all children are terminal with score 1, that's a loss
-        if self.state.turn == GREEN:
-            # Loop through all children
-            for child in self.children:
-                if child is not None:
-                    # Child exists
-                    if child.isTerminal:
-                        # Child is terminal
-                        if child.terminalScore == 0:
-                            # Terminal child has win available for green, declare this node terminal
-                            self.isTerminal = True
-                            self.terminalScore = 0
-                            self.terminalWinChild = child
-                            return
-                        elif child.terminalScore == 0.5:
-                            # Terminal child has tie available
-                            canTie = True
-                            self.terminalTieChild = child
-                    else:
-                        # Non-terminal child
-                        allChildrenTerminal = False
-                else:
-                    # Non-existent children can't be terminal
-                    allChildrenTerminal = False
-
-            # All child nodes are terminal, but there are no wins for currently player
-            if allChildrenTerminal:
-                if canTie:
-                    # Tie available
-                    self.isTerminal = True
-                    self.terminalScore = 0.5
-                else:
-                    # No tie, so loss for green
-                    self.isTerminal = True
-                    self.terminalScore = 1
+    def updateWith(self, sims, endValue):
+        self.sims += sims
+        self.score += endValue[self.actionFor]
 
     # This method finds the best available move for this node, attempts to maximize win chance
     def getBestChild(self):
@@ -129,15 +78,11 @@ class Node:
         # If this node is terminal, the best option is a forced win child. Otherwise all children
         # are either forced losses or ties, in this case we want the tie
         if self.isTerminal:
-            if self.terminalWinChild is not None:
+            if self.terminalChild is not None:
                 # A terminal win child exists, that's a winning move for sure, can't get better than that
-                return self.terminalWinChild
+                return self.terminalChild
 
-            if self.terminalTieChild is not None:
-                # If we get here, there's no terminal child with win, if terminal child with tie exists, that's the best
-                return self.terminalTieChild
-
-        currentMaxWin = -1
+        currentMaxWin = -float("inf")
         bestChild = None
         # Loop through all children to find the one with the greatest win chance
         for child in self.children:
@@ -154,21 +99,23 @@ class Node:
     def getWinChance(self):
         return self.score / max(self.sims, 1)
 
-    # Take win chance based on simulations and normalize it to be between -1 and 1, 1 indicates blue winning
     def getScore(self):
 
         if self.isTerminal:
             if self.terminalScore == 0.5:
-                # Node is terminal and is a tie
                 return 0
-            elif self.terminalScore == 1:
-                # Node is terminal and blue wins
-                return 1
-            elif self.terminalScore == 0:
-                # Node is terminal and green wins
-                return -1
+            elif self.terminalScore >= 1:
+                if self.actionFor == BLUE:
+                    return 1
+                else:
+                    return -1
+            elif self.terminalScore <= 0:
+                if self.actionFor == BLUE:
+                    return -1
+                else:
+                    return 1
 
-        if self.state.turn == GREEN:
+        if self.actionFor == BLUE:
             return 2 * self.getWinChance() - 1
         else:
             return - (2 * self.getWinChance() - 1)
