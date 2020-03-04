@@ -56,10 +56,10 @@ class Node:
         for child in self.children:
             if child is not None and child.isTerminal:
                 # If child has better terminal value, save it
-                if child.terminalValue[self.actionFor] >= self.terminalScore:
+                if child.terminalValue[child.actionFor] >= self.terminalScore:
                     self.terminalChild = child
                     self.terminalValue = child.terminalValue
-                    self.terminalScore = child.terminalValue[self.actionFor]
+                    self.terminalScore = child.terminalValue[child.actionFor]
             else:
                 # Non-existent child or non terminal child
                 allChildrenTerminal = False
@@ -75,12 +75,13 @@ class Node:
     # This method finds the best available move for this node, attempts to maximize win chance
     def getBestChild(self):
 
-        # If this node is terminal, the best option is a forced win child. Otherwise all children
-        # are either forced losses or ties, in this case we want the tie
-        if self.isTerminal:
-            if self.terminalChild is not None:
-                # A terminal win child exists, that's a winning move for sure, can't get better than that
-                return self.terminalChild
+        # If this node is terminal, the terminal child maximizes our score, so if it is
+        # greater than 0, it's either a forced win for this node, or there is a tie
+        # with every other being either a tie or a loss. So if we are greater than 0,
+        # that's the best we can do, otherwise just uses the win chance and hope
+        # the other player doesn't see how to force their win
+        if self.isTerminal and self.terminalScore > 0:
+            return self.terminalChild
 
         currentMaxWin = -float("inf")
         bestChild = None
@@ -105,12 +106,12 @@ class Node:
             if self.terminalScore == 0.5:
                 return 0
             elif self.terminalScore >= 1:
-                if self.actionFor == BLUE:
+                if self.state.turn == BLUE:
                     return 1
                 else:
                     return -1
             elif self.terminalScore <= 0:
-                if self.actionFor == BLUE:
+                if self.state.turn == BLUE:
                     return -1
                 else:
                     return 1

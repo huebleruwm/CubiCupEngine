@@ -141,21 +141,7 @@ class MCTS:
                       " UCT: " + str(child.getUCT()))
 
                 if child.isTerminal:
-                    if child.terminalScore == 1:
-                        if child.actionFor == BLUE:
-                            print(header + "Turn: Blue -- Win")
-                        else:
-                            print(header + "Turn: Green -- Win")
-                    elif child.terminalScore == 0.5:
-                        if child.actionFor == BLUE:
-                            print(header + "Turn: Blue -- Tie")
-                        else:
-                            print(header + "Turn: Green -- Tie")
-                    elif child.terminalScore == 0:
-                        if child.actionFor == BLUE:
-                            print(header + "Turn: Blue -- Loss")
-                        else:
-                            print(header + "Turn: Green -- Loss")
+                    print(header + "Terminal Value: " + str(child.terminalValue) + " Score: " + str(child.terminalScore))
 
                 self.printNodeChildren(child, header)
 
