@@ -22,7 +22,7 @@ class Node:
         if self.state.gameOver:
             self.isTerminal = True
             self.terminalValue = state.endValue
-            self.terminalScore = state.endValue[self.actionFor]
+            self.terminalScore = state.endValue[self.state.turn]
         else:
             self.isTerminal = False
             self.terminalValue = None
