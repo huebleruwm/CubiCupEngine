@@ -8,34 +8,56 @@ from CubiCupDriver import GREEN
 
 class MCTS:
 
-    def __init__(self, size):
+    def __init__(self, size, moveProbFunc=None):
         newGameState = CubiCupState.State(size)
-        self.root = CubiCupNode.Node(None, newGameState)
+        self.root = CubiCupNode.Node(None, newGameState, moveProbFunc=moveProbFunc)
+        self.root.sims = 1  # First node needs to start at 1, otherwise sum of child sims is parent sims-1, no idea why, this is just a hacky fix
         self.newRoot = None
         self.newRootReady = False
         self.reset = False
         self.gameSize = size
+        self.simsSinceLastMove = 0
+        self.kill = False
+        self.pause = False
+        self.isPaused = False
+        self.moveProbFunc = moveProbFunc
+
+    def resetMCTS(self):
+        # Reset all parameters
+        newGameState = CubiCupState.State(self.gameSize)
+        self.root = CubiCupNode.Node(None, newGameState, self.moveProbFunc)
+        self.newRoot = None
+        self.newRootReady = False
+        self.reset = False
+        self.simsSinceLastMove = 0
+        self.pause = False
+        self.kill = False
+        self.isPaused = False
 
     def indicateReset(self, size):
         # Indicate that we are ready to reset the MCTS
         self.gameSize = size
         self.reset = True
 
-    def resetMCTS(self):
-        # Reset all parameters
-        newGameState = CubiCupState.State(self.gameSize)
-        self.root = CubiCupNode.Node(None, newGameState)
-        self.newRoot = None
-        self.newRootReady = False
-        self.reset = False
+    def end(self):
+        self.kill = True
+
+    def setPause(self):
+        self.pause = True
+
+    def setPlay(self):
+        self.pause = False
 
     def updateWithTurn(self, move):
 
         # Find node with move in children list, then set the new root to that child
         for i in range(len(self.root.children)):
-            if self.root.children[i].state.lastMove == move:
-                self.newRoot = self.root.children[i]
-                self.newRootReady = True
+            child = self.root.children[i]
+            if child is not None:
+                if child.state.lastMove == move:
+                    self.newRoot = self.root.children[i]
+                    self.newRootReady = True
+                    self.simsSinceLastMove = 0
 
     def selectNodeToExpand(self, node):
 
@@ -43,6 +65,9 @@ class MCTS:
         if node.isTerminal:
             return node
 
+        """
+        # If there are any unexplored children, choose one of them
+        # This should be replaced by a neural network call,
         if node.childrenUnexplored > 0:
             newChildIndex = len(node.children) - node.childrenUnexplored
             node.createChildAt(newChildIndex)
@@ -63,8 +88,16 @@ class MCTS:
                 if currentUCT >= maxUCT:
                     maxUCT = currentUCT
                     bestNode = child
+        """
 
-        return self.selectNodeToExpand(bestNode)
+        expandIndex = node.getChildToExpandIndex()
+
+        # If child to expand is new, return it
+        if node.children[expandIndex] is None:
+            node.createChildAt(expandIndex)
+            return node.children[expandIndex]
+
+        return self.selectNodeToExpand(node.children[expandIndex])
 
     def simulate(self, node):
 
@@ -107,21 +140,38 @@ class MCTS:
             if self.reset:
                 self.resetMCTS()
 
-            # Run for a max of a million simulations, or until the root node is determined to be terminal
-            if not self.root.isTerminal and self.root.sims < 1000000:
+            if self.kill:
+                break
 
-                # Select most promising node to expand upon
-                nodeToExpand = self.selectNodeToExpand(self.root)
-
-                # Simulate game starting from that node, recording who won
-                endValue = self.simulate(nodeToExpand)
-
-                # Back propagate the result of that simulation through the tree
-                self.backPropagate(endValue, nodeToExpand)
-
+            if self.pause:
+                self.isPaused = True
             else:
-                # No more searching being done, just sleep to be courteous to cpu
-                time.sleep(0.1)
+
+                # Run for a max of a million simulations, or until the root node is determined to be terminal
+                if not self.root.isTerminal and self.root.sims < 1000000:
+
+                    self.simsSinceLastMove = self.simsSinceLastMove + 1
+
+                    # Select most promising node to expand upon
+                    nodeToExpand = self.selectNodeToExpand(self.root)
+
+                    # Using the most promising node as determined by the MCTS algorithm, determine
+                    # the value and policy heads as predicted by the neural network.
+                    # This should update the probabilities, telling us which move to explore, then
+                    # we should back propagate the value during that step
+                    # call neuralNet( bestNode )
+
+                    # Simulate game starting from that node, recording who won
+                    endValue = self.simulate(nodeToExpand)
+
+                    # Back propagate the result of that simulation through the tree
+                    self.backPropagate(endValue, nodeToExpand)
+
+                else:
+                    # No more searching being done, just sleep to be courteous to cpu
+                    time.sleep(0.1)
+
+
 
             #print("SIM: " + str(self.root.sims))
             #self.printNodeChildren(self.root, "")

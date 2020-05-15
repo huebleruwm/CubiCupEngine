@@ -19,6 +19,10 @@ def getInitialBoard(size, board):
 
 # Add move to board
 def addMoveToBoard(board, x, y, z, turn, pieces):
+
+    # this is commented out because moves are based on available ones, so they are
+    # guaranteed to be legal, but I'll leave this in just in case we ever change that
+
     # cant play if top is full
     #if board[0][0][0] != EMPTY:
     #    return

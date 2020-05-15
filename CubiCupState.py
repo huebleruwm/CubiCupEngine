@@ -99,7 +99,15 @@ class State:
             self.availableMoves = []
             getAvailableMoves(self.board, self.boardSize, self.availableMoves)
         else:
+            # No cup was filled, so the available moves left are just the ones before with the
+            # taken move removed. No need to redetermine all available.
             updateAvailableMoves(self.board, self.availableMoves, self.lastMove)
+
+        # we now have a new state, and the available moves should be associate with new
+
+        # update value and policy values based on neural net
+        # send neural net the board state
+        # get back value and of the state and move probablities
 
     def checkForEnd(self):
 
@@ -125,4 +133,3 @@ class State:
             # blue wins, add score based on left over pieces
             self.endValue = (1 + self.pieces[BLUE], -self.pieces[BLUE])
             self.gameOver = True
-

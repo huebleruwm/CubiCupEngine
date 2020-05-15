@@ -4,20 +4,28 @@ import CubiCupState
 import CubiCupNode
 from CubiCupDriver import BLUE
 from CubiCupDriver import GREEN
+import Network
 
 
 class Node:
 
-    def __init__(self, parent, state):
+    def __init__(self, parent, state, probability=1, moveProbFunc=None):
         self.parent = parent
-        self.children = [None for x in range(len(state.availableMoves))]
         self.state = state
         self.score = 0
         self.sims = 0
-        self.explore = 1
+        self.explore = 2
         self.terminalChild = None
-        self.childrenUnexplored = len(self.children)
         self.actionFor = state.lastTurn()
+        self.probability = probability
+        self.children = [None for x in range(len(state.availableMoves))]
+        self.childrenUnexplored = len(self.children)
+        self.moveProbFunc = moveProbFunc
+
+        if moveProbFunc is not None:
+            self.childProbs = Network.getMoveProbs(self.state, moveProbFunc)
+        else:
+            self.childProbs = None
 
         if self.state.gameOver:
             self.isTerminal = True
@@ -37,7 +45,10 @@ class Node:
         newChildState.takeTurn(self.state.availableMoves[i])
 
         # Create new node with new state, listing this node as parent
-        self.children[i] = CubiCupNode.Node(self, newChildState)
+        if self.childProbs is None:
+            self.children[i] = CubiCupNode.Node(self, newChildState, moveProbFunc=self.moveProbFunc)
+        else:
+            self.children[i] = CubiCupNode.Node(self, newChildState, probability=self.childProbs[i], moveProbFunc=self.moveProbFunc)
 
         # This node has a child, it is no longer a leaf
         self.childrenUnexplored -= 1
@@ -93,9 +104,36 @@ class Node:
 
         return bestChild
 
+    # Get the child that has the highest UCT score, if child does not exist, create it
+    def getChildToExpandIndex(self):
+
+        maxUCT = -float("inf")
+        bestChildIndex = None
+
+        for i in range(len(self.children)):
+
+            if self.children[i] is None:
+                if self.childProbs is None:
+                    # No child probs and child does not exist, just greedy explore
+                    return i
+                else:
+                    # Use UCT without win percent, just explore/probability
+                    UCT = self.explore * self.childProbs[i] * sqrt(log(self.sims))
+            else:
+                UCT = self.children[i].getUCT()
+
+            if UCT >= maxUCT:
+                maxUCT = UCT
+                bestChildIndex = i
+
+        return bestChildIndex
+
     def getUCT(self):
         # UCT formula as specified by wikipedia
-        return (self.score/self.sims) + self.explore * sqrt(log(self.parent.sims) / self.sims)
+        #return (self.score/self.sims) + self.explore * sqrt(log(self.parent.sims) / self.sims)
+
+        # UCT based on Alpha Zero, using probability to scale the explore factor seems to make the mose sense
+        return (self.score/self.sims) + self.explore * self.probability * sqrt(log(self.parent.sims) / self.sims)
 
     def getWinChance(self):
         return self.score / max(self.sims, 1)
@@ -120,3 +158,31 @@ class Node:
             return 2 * self.getWinChance() - 1
         else:
             return - (2 * self.getWinChance() - 1)
+
+    def getMoveProbabilities(self):
+
+        size = self.state.boardSize
+
+        moveProbs = [[[0 for x in range(size + 1)] for y in range(size + 1)] for z in range(size + 1)]
+
+        for i in range(len(self.children)):
+
+            child = self.children[i]
+            move = self.state.availableMoves[i]
+
+            # Get x,y,z from move tuple
+            x = move[0]
+            y = move[1]
+            z = move[2]
+
+            if child is None:
+                #print("adding " + str(self.state.availableMoves[i]) + " : " + 0 + " : " + str((self.sims-1)))
+                #moveProbs.append((self.state.availableMoves[i], 0))
+                moveProbs[x][y][z] = 0
+            else:
+                #print("adding " + str(self.state.availableMoves[i]) + " : " + str(child.sims) + " : " + str((self.sims-1)))
+                #moveProbs.append((self.state.availableMoves[i], child.sims/(self.sims-1)))
+                moveProbs[x][y][z] = child.sims/(self.sims-1)
+
+        return moveProbs
+

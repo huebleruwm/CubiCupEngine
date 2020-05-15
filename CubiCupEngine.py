@@ -1,6 +1,7 @@
 import sys
 import time
 import CubiCupMCTS
+import Network
 
 
 class Engine:
@@ -14,12 +15,13 @@ class Engine:
     # Print the values we care about
     def printValues(self):
         if self.mcts is not None and self.mcts.root.getBestChild() is not None:
-            output("Best Move:" + str(self.mcts.root.getBestChild().state.lastMove))  # print "Random Move:(x,y,z)"
+            output("Best Move:" + str(self.mcts.root.getBestChild().state.lastMove))
             output("Score:" + str(self.mcts.root.getBestChild().getScore()))
             output("Simulations:" + str(self.mcts.root.sims))
             output("Game Size:" + str(self.gameSize))
         else:
-            output("Error:Something is wrong")
+            pass
+            #output("Error:Something is wrong")
 
     # "subscribe:x" is used to tell the interfacing program which values this program will output
     def printValueDefinitions(self):
@@ -54,8 +56,19 @@ class Engine:
             time.sleep(0.1)
             continue
 
+        modelName = "/home/guntherhuebler/PycharmProjects/CubiCupEngine/currentModel_" + str(self.gameSize) + ".h5"
+
+        # Get model from name, then get output function so predicts can be done quickly
+        if modelName is not None:
+            inputShape = (1, self.gameSize + 1, self.gameSize + 1, self.gameSize + 1)
+            policyShape = (1, self.gameSize + 1, self.gameSize + 1, self.gameSize + 1)
+            model = Network.getModel(modelName, inputShape, policyShape)
+            outputFunc = Network.getOutputFunc(model)
+        else:
+            outputFunc = None
+
         # Create new mcts and start running it
-        self.mcts = CubiCupMCTS.MCTS(self.gameSize)
+        self.mcts = CubiCupMCTS.MCTS(self.gameSize, moveProbFunc=outputFunc)
         self.mcts.run()
         return
 
